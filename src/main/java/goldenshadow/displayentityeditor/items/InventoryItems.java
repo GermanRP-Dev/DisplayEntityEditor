@@ -1,7 +1,11 @@
 package goldenshadow.displayentityeditor.items;
 
 import goldenshadow.displayentityeditor.DisplayEntityEditor;
+import goldenshadow.displayentityeditor.SelectionMode;
 import goldenshadow.displayentityeditor.Utilities;
+
+import java.util.ArrayList;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -357,11 +361,74 @@ public class InventoryItems {
      * Creates the tool precision item
      * @return The item
      */
-    public ItemStack toolPrecision() {
+    public ItemStack toolPrecision(Player p) {
+        float precision = Utilities.getToolPrecision(p);
         ItemStack itemStack = new ItemStack(Material.COMPARATOR);
         Utilities.setMeta(itemStack, DisplayEntityEditor.messageManager.getString("tool_precision_name"),
                 DisplayEntityEditor.messageManager.getList("tool_precision_lore"),
-                "InventoryToolPrecision"
+                "InventoryToolPrecision",
+                Utilities.reduceFloatLength(Double.toString(precision < 1 ? 0.1f : 1f))
+        );
+        return itemStack;
+    }
+
+    /**
+     * Creates the tool selection mode item
+     * @return The item
+     */
+    public ItemStack toolSelectionMode(Player p) {
+        ItemStack itemStack = new ItemStack(Material.RECOVERY_COMPASS);
+        SelectionMode mode = Utilities.getToolSelectMode(p);
+        ArrayList<String> lore = new ArrayList<>();
+        lore.addAll(DisplayEntityEditor.messageManager.getList("tool_selection_mode_lore_start"));
+        lore.addAll(DisplayEntityEditor.messageManager.getList("tool_selection_mode_description_" + mode.id()));
+        lore.addAll(DisplayEntityEditor.messageManager.getList("tool_selection_mode_lore_end"));
+        Utilities.setMeta(itemStack, DisplayEntityEditor.messageManager.getString("tool_selection_mode_name"),
+                lore,
+                "InventoryToolSelectionMode",
+                Utilities.getObjectNameMessage(mode),
+                Utilities.reduceFloatLength(Double.toString(Utilities.getToolSelectRange(p)))
+        );
+        return itemStack;
+    }
+
+    /**
+     * Creates the tool selection range item
+     * @return The item
+     */
+    public ItemStack toolSelectionRange(Player p) {
+        float range = Utilities.getToolSelectRange(p);
+        ItemStack itemStack = new ItemStack(Material.SPECTRAL_ARROW);
+        Utilities.setMeta(itemStack, DisplayEntityEditor.messageManager.getString("tool_selection_range_name"),
+                DisplayEntityEditor.messageManager.getList("tool_selection_range_lore"),
+                "InventoryToolSelectionRange",
+                Utilities.reduceFloatLength(Double.toString(range < 2 ? 0.25f : 1f))
+        );
+        return itemStack;
+    }
+
+    /**
+     * Creates the tool selection search mode item
+     * @return The item
+     */
+    public ItemStack toolSearchMode() {
+        ItemStack itemStack = new ItemStack(Material.CLOCK);
+        Utilities.setMeta(itemStack, DisplayEntityEditor.messageManager.getString("tool_selection_search_mode_name"),
+                DisplayEntityEditor.messageManager.getList("tool_selection_search_mode_lore"),
+                "InventoryToolSelectionSearchMode"
+        );
+        return itemStack;
+    }
+
+    /**
+     * Creates the tool selection multiple item
+     * @return The item
+     */
+    public ItemStack toolSelectionMultiple() {
+        ItemStack itemStack = new ItemStack(Material.CHEST);
+        Utilities.setMeta(itemStack, DisplayEntityEditor.messageManager.getString("tool_selection_multiple_name"),
+                DisplayEntityEditor.messageManager.getList("tool_selection_multiple_lore"),
+                "InventoryToolSelectionMultiple"
         );
         return itemStack;
     }
@@ -388,7 +455,7 @@ public class InventoryItems {
         Utilities.setMeta(itemStack, DisplayEntityEditor.messageManager.getString("group_select_name"),
                 DisplayEntityEditor.messageManager.getList("group_select_lore"),
                 "InventoryGroupSelect",
-                Utilities.reduceFloatLength(Double.toString(Utilities.getToolPrecision(p)))
+                Utilities.reduceFloatLength(Double.toString(Utilities.getToolSelectRange(p)))
         );
         return itemStack;
     }

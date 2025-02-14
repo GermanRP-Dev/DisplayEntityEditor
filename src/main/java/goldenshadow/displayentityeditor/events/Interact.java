@@ -2,9 +2,9 @@ package goldenshadow.displayentityeditor.events;
 
 import goldenshadow.displayentityeditor.DisplayEntityEditor;
 import goldenshadow.displayentityeditor.EditingHandler;
+import goldenshadow.displayentityeditor.SelectionMode;
 import goldenshadow.displayentityeditor.Utilities;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
+import goldenshadow.displayentityeditor.enums.LockSearchMode;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.function.Predicate;
 
 public class Interact implements Listener {
 
@@ -175,6 +176,12 @@ public class Interact implements Listener {
                                     p.getInventory().setItem(i, DisplayEntityEditor.inventoryFactory.getInventoryItems().scaleY(p));
                             case "InventorySZ" ->
                                     p.getInventory().setItem(i, DisplayEntityEditor.inventoryFactory.getInventoryItems().scaleZ(p));
+                            case "InventoryToolPrecision" -> 
+                                    p.getInventory().setItem(i, DisplayEntityEditor.inventoryFactory.getInventoryItems().toolPrecision(p));
+                            case "InventoryToolSelectionRange" ->
+                                    p.getInventory().setItem(i, DisplayEntityEditor.inventoryFactory.getInventoryItems().toolSelectionRange(p));
+                            case "InventoryToolSelectionMode" ->
+                                    p.getInventory().setItem(i, DisplayEntityEditor.inventoryFactory.getInventoryItems().toolSelectionMode(p));
                             case "InventoryGroupSelect" ->
                                     p.getInventory().setItem(i, DisplayEntityEditor.inventoryFactory.getInventoryItems().groupSelectTool(p));
                         }
@@ -236,7 +243,7 @@ public class Interact implements Listener {
                 return;
             }
             case "InventoryUnlock" -> {
-                Collection<Display> displays = editingHandler.getEditingDisplays(player, false);
+                Collection<Display> displays = editingHandler.getEditingDisplays(player, LockSearchMode.LOCKED);
 
                 if (displays == null) {
                     player.sendMessage(Utilities.getErrorMessageFormat(DisplayEntityEditor.messageManager.getString("unlock_fail")));
@@ -253,29 +260,81 @@ public class Interact implements Listener {
                 return;
             }
             case "InventoryToolPrecision" -> {
-                double d = Utilities.getToolPrecision(player);
+                double d0 = Utilities.getToolPrecision(player);
                 if (player.isSneaking()) {
-                    if (d > 1) {
-                        d = Math.max(0.1, d - 1);
+                    if (d0 > 1) {
+                        d0 = Math.max(0.1, d0 - 1);
                     } else {
-                        d = Math.max(0.1, d - 0.1);
+                        d0 = Math.max(0.1, d0 - 0.1);
                     }
                 } else {
-                    if (d < 1) {
-                        d = Math.min(10, d + 0.1);
+                    if (d0 < 1) {
+                        d0 = Math.min(10, d0 + 0.1);
                     } else {
-                        d = Math.min(10, d + 1);
+                        d0 = Math.min(10, d0 + 1);
                     }
                 }
-                d = (double) Math.round(d * 1000) / 1000;
-                player.getPersistentDataContainer().set(DisplayEntityEditor.toolPrecisionKey, PersistentDataType.DOUBLE, d);
+                d0 = (double) Math.round(d0 * 1000) / 1000;
+                player.getPersistentDataContainer().set(DisplayEntityEditor.toolPrecisionKey, PersistentDataType.DOUBLE, d0);
                 updateItems(player);
-                Utilities.sendActionbarMessage(player, DisplayEntityEditor.messageManager.getString("tool_precision").formatted(df.format(d)));
+                Utilities.sendActionbarMessage(player, DisplayEntityEditor.messageManager.getString("tool_precision").formatted(df.format(d0)));
+                return;
+            }
+            case "InventoryToolSelectionRange" -> {
+                double d1 = Utilities.getToolSelectRange(player);
+                if (player.isSneaking()) {
+                    if (d1 > 2) {
+                        d1 = Math.max(0.25, d1 - 1);
+                    } else {
+                        d1 = Math.max(0.25, d1 - 0.25);
+                    }
+                } else {
+                    if (d1 < 2) {
+                        d1 = Math.min(15, d1 + 0.25);
+                    } else {
+                        d1 = Math.min(15, d1 + 1);
+                    }
+                }
+                d1 = (double) Math.round(d1 * 1000) / 1000;
+                player.getPersistentDataContainer().set(DisplayEntityEditor.toolSelectionRangeKey, PersistentDataType.DOUBLE, d1);
+                updateItems(player);
+                Utilities.sendActionbarMessage(player, DisplayEntityEditor.messageManager.getString("tool_range").formatted(df.format(d1)));
+                return;
+            }
+            case "InventoryToolSelectionMode" -> {
+                SelectionMode mode = Utilities.getToolSelectMode(player);
+                if (player.isSneaking()) {
+                    mode = mode.previousMode();
+                } else {
+                    mode = mode.nextMode();
+                }
+                player.getPersistentDataContainer().set(DisplayEntityEditor.toolSelectionModeKey, PersistentDataType.STRING, mode.id());
+                updateItems(player);
+                Utilities.sendActionbarMessage(player, DisplayEntityEditor.messageManager.getString("tool_selection_changed").formatted(Utilities.getObjectNameMessage(mode)));
+                return;
+            }
+            case "InventoryToolSelectionMultiple" -> {
+                boolean multiple = !Utilities.getToolSelectMultiple(player);
+                player.getPersistentDataContainer().set(DisplayEntityEditor.toolSelectionMultipleKey, PersistentDataType.BOOLEAN, multiple);
+                updateItems(player);
+                Utilities.sendActionbarMessage(player, DisplayEntityEditor.messageManager.getString("tool_multiple_changed").formatted(Utilities.getObjectNameMessage(multiple)));
+                return;
+            }
+            case "InventoryToolSelectionSearchMode" -> {
+                LockSearchMode mode = Utilities.getToolSearchMode(player);
+                if (player.isSneaking()) {
+                    mode = mode.previousMode();
+                } else {
+                    mode = mode.nextMode();
+                }
+                player.getPersistentDataContainer().set(DisplayEntityEditor.toolSelectionSearchModeKey, PersistentDataType.STRING, mode.name());
+                updateItems(player);
+                Utilities.sendActionbarMessage(player, DisplayEntityEditor.messageManager.getString("tool_search_changed").formatted(Utilities.getObjectNameMessage(mode)));
                 return;
             }
         }
 
-        Collection<Display> displays = editingHandler.getEditingDisplays(player, true);
+        Collection<Display> displays = editingHandler.getEditingDisplays(player);
 
         if (displays == null) {
             player.sendMessage(Utilities.getErrorMessageFormat(DisplayEntityEditor.messageManager.getString("generic_fail")));
@@ -596,10 +655,11 @@ public class Interact implements Listener {
             case "InventoryGroupSelect" -> {
                 if (!player.isSneaking()) {
                     Collection<Display> group = new HashSet<>();
-                    double distance = Utilities.getToolPrecision(player);
+                    double distance = Utilities.getToolSelectRange(player);
+                    Predicate<Display> predicate = Utilities.getToolSearchMode(player).getPredicate();
                     for (Entity e : player.getNearbyEntities(distance,distance,distance)) {
                         if (e instanceof Display d) {
-                            if (!d.getScoreboardTags().contains("dee:locked")) {
+                            if (predicate.test(d)) {
                                 group.add(d);
                                 highlightEntity(d);
                             }
